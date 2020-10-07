@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2019, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2020, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -60,7 +60,7 @@ static int checkparts(CURLU *u, const char *in, const char *wanted,
     {CURLUPART_FRAGMENT, "fragment"},
     {0, NULL}
   };
-  buf[0] = 0;
+  memset(buf, 0, sizeof(buf));
 
   for(i = 0; parts[i].name; i++) {
     char *p = NULL;
@@ -129,6 +129,23 @@ struct querycase {
 };
 
 static struct testcase get_parts_list[] ={
+  {"[::1]",
+   "http | [11] | [12] | [13] | [::1] | [15] | / | [16] | [17]",
+   CURLU_GUESS_SCHEME, 0, CURLUE_OK },
+  {"[::]",
+   "http | [11] | [12] | [13] | [::] | [15] | / | [16] | [17]",
+   CURLU_GUESS_SCHEME, 0, CURLUE_OK },
+  {"https://[::1]",
+   "https | [11] | [12] | [13] | [::1] | [15] | / | [16] | [17]",
+   0, 0, CURLUE_OK },
+  {"user:moo@ftp.example.com/color/#green?no-red",
+   "ftp | user | moo | [13] | ftp.example.com | [15] | /color/ | [16] | "
+   "green?no-red",
+   CURLU_GUESS_SCHEME, 0, CURLUE_OK },
+  {"ftp.user:moo@example.com/color/#green?no-red",
+   "http | ftp.user | moo | [13] | example.com | [15] | /color/ | [16] | "
+   "green?no-red",
+   CURLU_GUESS_SCHEME, 0, CURLUE_OK },
 #ifdef WIN32
   {"file:/C:\\programs\\foo",
    "file | [11] | [12] | [13] | [14] | [15] | C:\\programs\\foo | [16] | [17]",
@@ -140,6 +157,30 @@ static struct testcase get_parts_list[] ={
    "file | [11] | [12] | [13] | [14] | [15] | C:\\programs\\foo | [16] | [17]",
    CURLU_DEFAULT_SCHEME, 0, CURLUE_OK},
 #endif
+  {"https://example.com/color/#green?no-red",
+   "https | [11] | [12] | [13] | example.com | [15] | /color/ | [16] | "
+   "green?no-red",
+   CURLU_DEFAULT_SCHEME, 0, CURLUE_OK },
+  {"https://example.com/color/#green#no-red",
+   "https | [11] | [12] | [13] | example.com | [15] | /color/ | [16] | "
+   "green#no-red",
+   CURLU_DEFAULT_SCHEME, 0, CURLUE_OK },
+  {"https://example.com/color/?green#no-red",
+   "https | [11] | [12] | [13] | example.com | [15] | /color/ | green | "
+   "no-red",
+   CURLU_DEFAULT_SCHEME, 0, CURLUE_OK },
+  {"https://example.com/#color/?green#no-red",
+   "https | [11] | [12] | [13] | example.com | [15] | / | [16] | "
+   "color/?green#no-red",
+   CURLU_DEFAULT_SCHEME, 0, CURLUE_OK },
+  {"https://example.#com/color/?green#no-red",
+   "https | [11] | [12] | [13] | example. | [15] | / | [16] | "
+   "com/color/?green#no-red",
+   CURLU_DEFAULT_SCHEME, 0, CURLUE_OK },
+  {"http://[ab.be:1]/x", "",
+   CURLU_DEFAULT_SCHEME, 0, CURLUE_MALFORMED_INPUT},
+  {"http://[ab.be]/x", "",
+   CURLU_DEFAULT_SCHEME, 0, CURLUE_MALFORMED_INPUT},
   /* URL without host name */
   {"http://a:b@/x", "",
    CURLU_DEFAULT_SCHEME, 0, CURLUE_NO_HOST},
@@ -410,6 +451,18 @@ static struct urltestcase get_url_list[] = {
   {"tp://example.com/path/html",
    "tp://example.com/path/html",
    CURLU_NON_SUPPORT_SCHEME, 0, CURLUE_OK},
+  {"custom-scheme://host?expected=test-good",
+   "custom-scheme://host/?expected=test-good",
+   CURLU_NON_SUPPORT_SCHEME, 0, CURLUE_OK},
+  {"custom-scheme://?expected=test-bad",
+   "",
+   CURLU_NON_SUPPORT_SCHEME, 0, CURLUE_MALFORMED_INPUT},
+  {"custom-scheme://?expected=test-new-good",
+   "custom-scheme:///?expected=test-new-good",
+   CURLU_NON_SUPPORT_SCHEME | CURLU_NO_AUTHORITY, 0, CURLUE_OK},
+  {"custom-scheme://host?expected=test-still-good",
+   "custom-scheme://host/?expected=test-still-good",
+   CURLU_NON_SUPPORT_SCHEME | CURLU_NO_AUTHORITY, 0, CURLUE_OK},
   {NULL, NULL, 0, 0, 0}
 };
 
@@ -547,6 +600,17 @@ static struct setcase set_parts_list[] = {
    "scheme=ftp,",
    "ftp://example.com:80/",
    0, 0, CURLUE_OK, CURLUE_OK},
+  {"custom-scheme://host",
+   "host=\"\",",
+   "custom-scheme://host/",
+   CURLU_NON_SUPPORT_SCHEME, CURLU_NON_SUPPORT_SCHEME, CURLUE_OK,
+   CURLUE_MALFORMED_INPUT},
+  {"custom-scheme://host",
+   "host=\"\",",
+   "custom-scheme:///",
+   CURLU_NON_SUPPORT_SCHEME, CURLU_NON_SUPPORT_SCHEME | CURLU_NO_AUTHORITY,
+   CURLUE_OK, CURLUE_OK},
+
   {NULL, NULL, NULL, 0, 0, 0, 0}
 };
 
@@ -574,7 +638,7 @@ static CURLUPart part2id(char *part)
     return CURLUPART_FRAGMENT;
   if(!strcmp("zoneid", part))
     return CURLUPART_ZONEID;
-  return 9999; /* bad input => bad output */
+  return (CURLUPart)9999; /* bad input => bad output */
 }
 
 static CURLUcode updateurl(CURLU *u, const char *cmd, unsigned int setflags)
@@ -590,6 +654,9 @@ static CURLUcode updateurl(CURLU *u, const char *cmd, unsigned int setflags)
       char buf[80];
       char part[80];
       char value[80];
+
+      memset(part, 0, sizeof(part)); /* Avoid valgrind false positive. */
+      memset(value, 0, sizeof(value)); /* Avoid valgrind false positive. */
       memcpy(buf, p, n);
       buf[n] = 0;
       if(2 == sscanf(buf, "%79[^=]=%79[^,]", part, value)) {
@@ -619,6 +686,14 @@ static CURLUcode updateurl(CURLU *u, const char *cmd, unsigned int setflags)
 }
 
 static struct redircase set_url_list[] = {
+  {"http://example.org/static/favicon/wikipedia.ico",
+   "//fake.example.com/licenses/by-sa/3.0/",
+   "http://fake.example.com/licenses/by-sa/3.0/",
+   0, 0, 0},
+  {"https://example.org/static/favicon/wikipedia.ico",
+   "//fake.example.com/licenses/by-sa/3.0/",
+   "https://fake.example.com/licenses/by-sa/3.0/",
+   0, 0, 0},
   {"file://localhost/path?query#frag",
    "foo#another",
    "file:///foo#another",

@@ -47,17 +47,18 @@ SOCKS5 proxy auth
  <command>
 http://%HOSTIP:1/717 -x socks5://uz3r:p4ssworm@%HOSTIP:%SOCKSPORT
 </command>
+<features>
+proxy
+</features>
 </client>
 
 #
 # Verify data after the test has been "shot"
 <verify>
-<strip>
-^User-Agent:.*
-</strip>
 <protocol>
 GET /717 HTTP/1.1
 Host: %HOSTIP:1
+User-Agent: curl/%VERSION
 Accept: */*
 
 </protocol>

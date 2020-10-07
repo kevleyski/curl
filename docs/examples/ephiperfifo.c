@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2019, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2020, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -108,7 +108,7 @@ typedef struct _SockInfo
   GlobalInfo *global;
 } SockInfo;
 
-#define __case(code) \
+#define mycase(code) \
   case code: s = __STRING(code)
 
 /* Die if we get a bad CURLMcode somewhere */
@@ -117,14 +117,14 @@ static void mcode_or_die(const char *where, CURLMcode code)
   if(CURLM_OK != code) {
     const char *s;
     switch(code) {
-      __case(CURLM_BAD_HANDLE); break;
-      __case(CURLM_BAD_EASY_HANDLE); break;
-      __case(CURLM_OUT_OF_MEMORY); break;
-      __case(CURLM_INTERNAL_ERROR); break;
-      __case(CURLM_UNKNOWN_OPTION); break;
-      __case(CURLM_LAST); break;
+      mycase(CURLM_BAD_HANDLE); break;
+      mycase(CURLM_BAD_EASY_HANDLE); break;
+      mycase(CURLM_OUT_OF_MEMORY); break;
+      mycase(CURLM_INTERNAL_ERROR); break;
+      mycase(CURLM_UNKNOWN_OPTION); break;
+      mycase(CURLM_LAST); break;
       default: s = "CURLM_unknown"; break;
-      __case(CURLM_BAD_SOCKET);
+      mycase(CURLM_BAD_SOCKET);
       fprintf(MSG_OUT, "ERROR: %s returns %s\n", where, s);
       /* ignore this error */
       return;
@@ -146,7 +146,7 @@ static int multi_timer_cb(CURLM *multi, long timeout_ms, GlobalInfo *g)
   fprintf(MSG_OUT, "multi_timer_cb: Setting timeout to %ld ms\n", timeout_ms);
 
   if(timeout_ms > 0) {
-    its.it_interval.tv_sec = 1;
+    its.it_interval.tv_sec = 0;
     its.it_interval.tv_nsec = 0;
     its.it_value.tv_sec = timeout_ms / 1000;
     its.it_value.tv_nsec = (timeout_ms % 1000) * 1000 * 1000;
@@ -155,7 +155,7 @@ static int multi_timer_cb(CURLM *multi, long timeout_ms, GlobalInfo *g)
     /* libcurl wants us to timeout now, however setting both fields of
      * new_value.it_value to zero disarms the timer. The closest we can
      * do is to schedule the timer to fire in 1 ns. */
-    its.it_interval.tv_sec = 1;
+    its.it_interval.tv_sec = 0;
     its.it_interval.tv_nsec = 0;
     its.it_value.tv_sec = 0;
     its.it_value.tv_nsec = 1;
@@ -488,7 +488,7 @@ int main(int argc, char **argv)
   }
 
   memset(&its, 0, sizeof(struct itimerspec));
-  its.it_interval.tv_sec = 1;
+  its.it_interval.tv_sec = 0;
   its.it_value.tv_sec = 1;
   timerfd_settime(g.tfd, 0, &its, NULL);
 

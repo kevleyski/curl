@@ -41,21 +41,23 @@ HTTP with cookie using host name 'moo'
  <command>
 -x http://%HOSTIP:%HTTPPORT http://moo/we/want/331 -b none http://moo/we/want/3310002
 </command>
+<features>
+proxy
+</features>
 </client>
 
 # Verify data after the test has been "shot"
 <verify>
-<strip>
-^User-Agent:.*
-</strip>
 <protocol>
 GET http://moo/we/want/331 HTTP/1.1
 Host: moo
+User-Agent: curl/%VERSION
 Accept: */*
 Proxy-Connection: Keep-Alive
 
 GET http://moo/we/want/3310002 HTTP/1.1
 Host: moo
+User-Agent: curl/%VERSION
 Accept: */*
 Proxy-Connection: Keep-Alive
 Cookie: moo=yes

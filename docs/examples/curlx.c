@@ -15,7 +15,7 @@
  */
 
 /*
- * Copyright (c) 2003 The OpenEvidence Project.  All rights reserved.
+ * Copyright (c) 2003 - 2020 The OpenEvidence Project.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -277,7 +277,7 @@ int main(int argc, char **argv)
 
   int tabLength = 100;
   char *binaryptr;
-  char *mimetype;
+  char *mimetype = NULL;
   char *mimetypeaccept = NULL;
   char *contenttype;
   const char **pp;
@@ -294,7 +294,7 @@ int main(int argc, char **argv)
 
   binaryptr = malloc(tabLength);
 
-  p.verbose = 0;
+  memset(&p, '\0', sizeof(p));
   p.errorbio = BIO_new_fp(stderr, BIO_NOCLOSE);
 
   curl_global_init(CURL_GLOBAL_DEFAULT);
@@ -372,7 +372,7 @@ int main(int argc, char **argv)
     args++;
   }
 
-  if(mimetype == NULL || mimetypeaccept == NULL)
+  if(mimetype == NULL || mimetypeaccept == NULL || p.p12file == NULL)
     badarg = 1;
 
   if(badarg) {
@@ -459,7 +459,7 @@ int main(int argc, char **argv)
     if(!serverurl) {
       int j = 0;
       BIO_printf(p.errorbio, "no service URL in user cert "
-                 "cherching in others certificats\n");
+                 "searching in others certificates\n");
       for(j = 0; j<sk_X509_num(p.ca); j++) {
         serverurl = my_get_ext(sk_X509_value(p.ca, j), p.accesstype,
                                NID_info_access);
@@ -474,7 +474,7 @@ int main(int argc, char **argv)
   }
 
   if(!serverurl) {
-    BIO_printf(p.errorbio, "no service URL in certificats,"
+    BIO_printf(p.errorbio, "no service URL in certificates,"
                " check '-accesstype (AD_DVCS | ad_timestamping)'"
                " or use '-connect'\n");
     goto err;
