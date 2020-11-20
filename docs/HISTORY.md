@@ -129,8 +129,10 @@ impossible. Around 5000 downloaded packages each week from the main site gives
 a hint, but the packages are mirrored extensively, bundled with numerous OS
 distributions and otherwise retrieved as part of other software.
 
-September: with the release of curl 7.10 it is released under the MIT license
+October 1: with the release of curl 7.10 it is released under the MIT license
 only.
+
+Starting with 7.10, curl verifies SSL server certificates by default.
 
 2003
 ----
@@ -138,13 +140,13 @@ only.
 January: Started working on the distributed curl tests. The autobuilds.
 
 February: the curl site averages at 20000 visits weekly. At any given moment,
-there's an average of 3 people browsing the curl.haxx.se site.
+there's an average of 3 people browsing the website.
 
 Multiple new authentication schemes are supported: Digest (May), NTLM (June)
 and Negotiate (June).
 
 November: curl 7.10.8 is released. 45000 lines of code. ~55000 unique visitors
-to the curl.haxx.se site. Five official web mirrors.
+to the website. Five official web mirrors.
 
 December: full-fledged SSL for FTP is supported.
 
@@ -380,3 +382,6 @@ April: added the cyassl backend (later renamed to WolfSSL)
  April: experimental MQTT support
 
  August: zstd support
+
+ November: the website moves to www.curl.se. The website serves 10TB data
+ monthly.
